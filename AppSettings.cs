@@ -28,6 +28,16 @@ namespace NoIPUpdateTool
 
         [JsonProperty("password")]
         public string Password { get; set; }
+
+        [JsonProperty("lastIp4")]
+        public string LastIp4 { get; set; }
+
+        [JsonProperty("lastIp6")]
+        public string LastIp6 { get; set; }
+
+        [JsonProperty("useIp6")]
+        public bool UseIp6 { get; set; }
+
     }
 
     public partial class AppSettings

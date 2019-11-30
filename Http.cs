@@ -8,10 +8,21 @@ namespace Tools
     public static class Http
     {
 
-        public static string Get(string uri)
+        public static string Get(string uri, string userAgent = "", string authString = "")
         {
+
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
             request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            WebHeaderCollection headers = request.Headers;
+
+            if (userAgent != "") {
+                // Non Default UserAgent
+                headers.Add("User-Agent", userAgent);
+            }
+            if (authString != "") {
+                // We need to send the authorisation header
+                headers.Add("Authorization", $"Basic {authString}");
+            }
 
             using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
             using (Stream stream = response.GetResponseStream())

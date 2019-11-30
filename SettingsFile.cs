@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Reflection;
 
@@ -5,14 +6,33 @@ namespace Tools
 {
     public static class SettingsFile
     {
+        public static string Base64(this string input)
+        {
+            if (input == null) {
+                input = "";
+            }
+            byte[] data = System.Text.ASCIIEncoding.ASCII.GetBytes(input);
+            return System.Convert.ToBase64String(data);
+        }
+
         public static string GetDirectory()
         {
-            return Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase).Replace("file:", "");
+            var appDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var appConfigPath = Path.Join(appDir, "NoIPUpdateTool");
+            if (!Directory.Exists(appConfigPath)) {
+                Directory.CreateDirectory(appConfigPath);
+            }
+            return appConfigPath;
+        }
+
+        public static bool Exists(string filePath)
+        {
+            var fullPath = Path.Join(GetDirectory(), filePath);
+            return File.Exists(fullPath);
         }
 
         public static string LoadJson(string filePath)
         {
-            var fullPath = Path.Join(GetDirectory(), filePath);
             return File.ReadAllText(Path.Join(GetDirectory(), filePath));
         }
 
