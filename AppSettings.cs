@@ -38,6 +38,9 @@ namespace NoIPUpdateTool
         [JsonProperty("useIp6")]
         public bool UseIp6 { get; set; }
 
+        [JsonProperty("forceInterval")]
+        public long ForceInterval { get; set; }
+
     }
 
     public partial class AppSettings

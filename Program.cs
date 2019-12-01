@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Reflection;
 using McMaster.Extensions.CommandLineUtils;
 using Tools;
-using static Tools.SettingsFile;
 
 namespace NoIPUpdateTool
 {
@@ -12,12 +12,10 @@ namespace NoIPUpdateTool
         const string _URL_API_IP4 = "https://api.ipify.org/?format=json";
         const string _URL_API_IP6 = "https://api6.ipify.org/?format=json";
         const string _URL_API_NOIP_UPDATE = "https://dynupdate.no-ip.com/nic/update";
-        const string _USER_AGENT = "tip2tail NoIPUpdateTool/DotNetCore-1.0.0 mark@tip2tail.scot";
-        const int _FORCE_EVERY_INTERVAL = 100;
+        const string _USER_AGENT = "tip2tail NoIPUpdateTool/DotNetCore-VERSION mark@tip2tail.scot";
 
         static int Main(string[] args)
         {
-
             var app = new CommandLineApplication
             {
                 Name = "NoIPUpdateTool",
@@ -25,10 +23,12 @@ namespace NoIPUpdateTool
             };
 
             app.HelpOption(inherited: true);
+            app.ThrowOnUnexpectedArgument = false;
 
             // Action - update
             app.Command("update", cmdUpdate =>
             {
+                cmdUpdate.Description = "Runs the NoIP API update process";
                 cmdUpdate.OnExecute(() =>
                 {
                     return ExecCommand_Update() ? 0 : 1;
@@ -37,6 +37,7 @@ namespace NoIPUpdateTool
             // Action - list-settings
             app.Command("list-settings", cmdListSettings =>
             {
+                cmdListSettings.Description = "Shows the settings file in JSON format";
                 cmdListSettings.OnExecute(() =>
                 {
                     Console.WriteLine("Settings (as JSON):");
@@ -48,6 +49,7 @@ namespace NoIPUpdateTool
             // Action - set-creds
             app.Command("set-creds", cmdSetCreds =>
             {
+                cmdSetCreds.Description = "Updates the username and password settings";
                 var username = cmdSetCreds.Argument("username", "Username for NoIP").IsRequired();
                 var password = cmdSetCreds.Argument("password", "Password for NoIP").IsRequired();
                 cmdSetCreds.OnExecute(() =>
@@ -60,10 +62,11 @@ namespace NoIPUpdateTool
                 });
             });
             // Action - set-force-interval
-            app.Command("set-force-interval", cmdForceInterval =>
+            app.Command("set-interval", cmdInterval =>
             {
-                var interval = cmdForceInterval.Argument<int>("interval", "Force update every X updates").IsRequired();
-                cmdForceInterval.OnExecute(() =>
+                cmdInterval.Description = "Sets the interval of executions before a forced update";
+                var interval = cmdInterval.Argument<int>("interval", "Force update every X updates").IsRequired();
+                cmdInterval.OnExecute(() =>
                 {
                     Settings().Interval = interval.ParsedValue;
                     SaveSettings();
@@ -72,11 +75,38 @@ namespace NoIPUpdateTool
                 });
             });
             // Action - set-hosts
-            
+            app.Command("set-hosts", cmdHosts =>
+            {
+                cmdHosts.Description = "Sets the list of hostnames for updating on each execution";
+                var hosts = cmdHosts.Argument("hosts", "NoIP hostnames (provide all to update)", true).IsRequired();
+                cmdHosts.OnExecute(() =>
+                {
+                    Settings().Hosts = hosts.Values.ToArray();
+                    SaveSettings();
+                    Console.WriteLine("Hosts updated");
+                    return 0;
+                });
+            });
+            // Action - about
+            app.Command("about", cmdAbout =>
+            {
+                cmdAbout.Description = "Displays the about informaition for this tool";
+                cmdAbout.OnExecute(() =>
+                {
+                    Console.WriteLine("NoIPUpdateTool");
+                    Console.WriteLine("by Mark Young (tip2tail)");
+                    Console.WriteLine("========================");
+                    Console.WriteLine("");
+                    Console.WriteLine($"Version: {Assembly.GetEntryAssembly().GetName().Version.ToString()}");
+                    Console.WriteLine("More information at: https://github.com/tip2tail/NoIPUpdateTool/");
+                    Console.WriteLine("");
+                    return 0;
+                });
+            });
 
             app.OnExecute(() =>
             {
-                Console.WriteLine("Specify an action!");
+                Console.WriteLine("This tool can only be used with an action specified from the list");
                 app.ShowHelp();
                 return 1;
             });
@@ -108,7 +138,7 @@ namespace NoIPUpdateTool
                     // Same as last time! Increment or Update?
                     doUpdate = false;
                     Settings().Interval++;
-                    if (Settings().Interval >= _FORCE_EVERY_INTERVAL)
+                    if (Settings().Interval >= Settings().ForceInterval)
                     {
                         Settings().Interval = 0;
                         doUpdate = true;
@@ -125,13 +155,17 @@ namespace NoIPUpdateTool
                         break;
                     }
 
+                    // Do the update request
                     Console.WriteLine($"Processing update for host: {host}");
                     var url = $"{_URL_API_NOIP_UPDATE}?hostname={host}&myip={ip4}";
                     if (validIp6 == "Valid")
                     {
                         url += $"&myipv6={ip6}";
                     }
-                    var outcome = Http.Get(url, _USER_AGENT, authString);
+                    var outcome = Http.Get(url, _USER_AGENT.Replace(
+                        "VERSION",
+                        Assembly.GetEntryAssembly().GetName().Version.ToString()
+                    ), authString);
                     Console.WriteLine($"Response: {outcome}");
                 }
 
@@ -162,6 +196,7 @@ namespace NoIPUpdateTool
             if (_settings == null || forceReload) {
                 if (!SettingsFile.Exists("appsettings.json")) {
                     _settings = new AppSettings();
+                    _settings.ForceInterval = 100;
                     SaveSettings();
                 } else {
                     _settings =  AppSettings.FromJson(SettingsFile.LoadJson("appsettings.json"));
