@@ -15,10 +15,15 @@ namespace Tools
             return System.Convert.ToBase64String(data);
         }
 
+        public static string GetLocation(string filename)
+        {
+            return Path.Join(GetDirectory(), filename);
+        }
+
         public static string GetDirectory()
         {
-            var appDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var appConfigPath = Path.Join(appDir, "NoIPUpdateTool");
+            var appDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            var appConfigPath = Path.Join(appDir, ".config", "NoIPUpdateTool");
             if (!Directory.Exists(appConfigPath)) {
                 Directory.CreateDirectory(appConfigPath);
             }
