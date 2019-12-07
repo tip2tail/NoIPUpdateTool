@@ -42,6 +42,7 @@ namespace NoIPUpdateTool
                 {
                     Console.WriteLine("Settings (as JSON):");
                     Console.WriteLine("");
+                    Console.WriteLine("Stored in: " + GetSettingsFileLocation());
                     Console.WriteLine(Settings().ToJson());
                     return 0;
                 });
@@ -209,6 +210,11 @@ namespace NoIPUpdateTool
         {
             var settings = Settings();
             SettingsFile.Save("appsettings.json", settings.ToJson());
+        }
+        
+        private static string GetSettingsFileLocation()
+        {
+            return SettingsFile.GetLocation("appsettings.json");
         }
     }
 }
